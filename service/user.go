@@ -64,8 +64,7 @@ func CreateUser(c *fiber.Ctx) error {
 	}
 	user.Password = string(hashedPassword)
 	collection := config.GetCollection("users")
-	insertResult,err := collection.InsertOne(context.Background(), user)
-
+	insertResult, err := collection.InsertOne(context.Background(), user)
 
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
@@ -79,10 +78,88 @@ func CreateUser(c *fiber.Ctx) error {
 }
 
 func UpdateUser(c *fiber.Ctx) error {
+	id := c.Params("id")
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error":   "Invalid ID",
+			"details": err.Error(),
+		})
+	}
 
-	return nil
+
+	var updatedData dto.User
+	if err := c.BodyParser(&updatedData); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error":   "Cannot parse JSON",
+			"details": err.Error(),
+		})
+	}
+
+	if updatedData.Password != "" {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(updatedData.Password), 10)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{
+				"error":   "Error hashing password",
+				"details": err.Error(),
+			})
+		}
+		updatedData.Password = string(hashedPassword)
+	}
+
+	collection := config.GetCollection("users")
+
+	update := bson.M{
+		"$set": bson.M{
+			"username": updatedData.Username,
+			"password": updatedData.Password,
+		},
+	}
+	result, err := collection.UpdateOne(context.Background(), bson.M{"_id": objectId}, update)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error":   "Error updating user",
+			"details": err.Error(),
+		})
+	}
+
+	if result.MatchedCount == 0 {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
+
+	return c.Status(200).JSON(fiber.Map{
+		"message": "User updated successfully",
+	})
 }
 
 func DeleteUser(c *fiber.Ctx) error {
-	return nil
+	id := c.Params("id")
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error":   "Invalid ID",
+			"details": err.Error(),
+		})
+	}
+
+	collection := config.GetCollection("users")
+	result, err := collection.DeleteOne(context.Background(), bson.M{"_id": objectId})
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error":   "Error deleting user",
+			"details": err.Error(),
+		})
+	}
+
+	if result.DeletedCount == 0 {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
+
+	return c.Status(200).JSON(fiber.Map{
+		"message": "User deleted successfully",
+	})
 }
