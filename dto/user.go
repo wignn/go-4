@@ -1,9 +1,7 @@
 package dto
 
 import (
-	
 	"go.mongodb.org/mongo-driver/bson/primitive"
-
 )
 
 type User struct {
@@ -11,3 +9,4 @@ type User struct {
 	Username string             `json:"username"`
 	Password string             `json:"password"`
 }
+
