@@ -1,40 +1,36 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"log"
 	"os"
-	"github.com/joho/godotenv"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-)
 
-var collection *mongo.Collection
+	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
+	"github.com/wignn/go-with-mongoDb/config"
+	routes "github.com/wignn/go-with-mongoDb/route"
+)
 
 func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatalf("Error loading .env file", err)
+		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	MONGO_URI := os.Getenv("MONGODB_URI")
-	clientOptions := options.Client().ApplyURI(MONGO_URI)
+	port := os.Getenv("PORT") 
 
-	client, err := mongo.Connect(context.Background(), clientOptions)
-
-	if err != nil {
-		log.Fatalf("Error connecting to MongoDB", err)
+	if port == "" {
+		port = "3000"
 	}
+	// Connect to MongoDB
+	client := config.ConnectMongoDB()
+	defer config.DisconnectMongoDB(client)
 
-	err = client.Ping(context.Background(), nil)
+	// Initialize Fiber app
+	app := fiber.New()
 
-	if err != nil {
-		log.Fatalf("Error pinging MongoDB", err)
-	}
+	// Setup routes
+	routes.SetupRoutes(app)
 
-	fmt.Println("Connected to MongoDB!")
-
-
-
+	// Start server
+	log.Fatal(app.Listen(":" + port ))
 }
