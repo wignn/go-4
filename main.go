@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"github.com/wignn/go-with-mongoDb/config"
-	routes "github.com/wignn/go-with-mongoDb/route"
+	routes "github.com/wignn/go-with-mongoDb/routes"
 )
 
 func main() {
